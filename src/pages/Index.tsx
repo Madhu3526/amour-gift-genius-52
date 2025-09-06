@@ -11,10 +11,12 @@ const Index = () => {
   const [recommendations, setRecommendations] = useState<GiftRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [recipientName, setRecipientName] = useState("");
   const { toast } = useToast();
 
   const handleGiftSearch = async (request: GiftRequest) => {
     setLoading(true);
+    setRecipientName(request.recipientName);
     try {
       const gifts = await generateGiftRecommendations(request);
       setRecommendations(gifts);
@@ -163,6 +165,7 @@ const Index = () => {
                   key={gift.id} 
                   gift={gift} 
                   onFeedback={handleFeedback}
+                  recipientName={recipientName}
                 />
               ))}
             </div>

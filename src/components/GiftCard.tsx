@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ThumbsUp, ThumbsDown, ExternalLink } from 'lucide-react';
+import { Heart, ThumbsUp, ThumbsDown, ExternalLink, ShoppingCart } from 'lucide-react';
+import { ShareGiftDialog } from './ShareGiftDialog';
+import { GroupGiftingDialog } from './GroupGiftingDialog';
 import type { GiftRecommendation } from '@/services/aiService';
 
 interface GiftCardProps {
   gift: GiftRecommendation;
   onFeedback: (giftId: string, liked: boolean) => void;
+  recipientName?: string;
 }
 
-export const GiftCard = ({ gift, onFeedback }: GiftCardProps) => {
+export const GiftCard = ({ gift, onFeedback, recipientName = "them" }: GiftCardProps) => {
   const [feedback, setFeedback] = useState<boolean | null>(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -67,6 +70,39 @@ export const GiftCard = ({ gift, onFeedback }: GiftCardProps) => {
             <p className="text-sm text-secondary-foreground leading-relaxed">
               <strong>Why this is perfect:</strong> {gift.reason}
             </p>
+          </div>
+        </div>
+
+        {/* Shopping Links */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground">Shop Now:</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(gift.amazonLink, '_blank')}
+              className="hover:bg-orange-500 hover:text-white transition-smooth"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Amazon
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(gift.flipkartLink, '_blank')}
+              className="hover:bg-blue-600 hover:text-white transition-smooth"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Flipkart
+            </Button>
+          </div>
+        </div>
+
+        {/* Social Features */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <ShareGiftDialog gift={gift} recipientName={recipientName} />
+            <GroupGiftingDialog gift={gift} recipientName={recipientName} />
           </div>
         </div>
         
