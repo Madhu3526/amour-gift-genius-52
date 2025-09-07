@@ -1,5 +1,3 @@
-import { pipeline } from "@huggingface/transformers";
-
 export interface GiftRequest {
   recipientName: string;
   age: number;
@@ -24,22 +22,18 @@ export interface GiftRecommendation {
   tags: string[];
 }
 
-// LLaMA model for gift recommendations
-let llamaGenerator: any = null;
+// Ollama API configuration
+const OLLAMA_BASE_URL = 'http://localhost:11434';
+const OLLAMA_MODEL = 'llama3.1';
 
-// Initialize LLaMA model
-const initializeLLaMA = async () => {
+// Check if Ollama is available
+const checkOllamaAvailability = async (): Promise<boolean> => {
   try {
-    if (!llamaGenerator) {
-      console.log('Initializing LLaMA model...');
-      llamaGenerator = await pipeline(
-        "text-generation", 
-        "microsoft/DialoGPT-medium"
-      );
-      console.log('LLaMA model initialized successfully');
-    }
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`);
+    return response.ok;
   } catch (error) {
-    console.log('LLaMA model initialization failed:', error);
+    console.log('Ollama not available:', error);
+    return false;
   }
 };
 
@@ -81,40 +75,57 @@ Example format:
 ]`;
 };
 
-// Call LLaMA model for gift recommendations
-const generateLLaMARecommendations = async (userDetails: GiftRequest): Promise<any[]> => {
-  if (!llamaGenerator) {
-    console.log('LLaMA not available, using rule-based recommendations');
+// Call Ollama model for gift recommendations
+const generateOllamaRecommendations = async (userDetails: GiftRequest): Promise<any[]> => {
+  const isOllamaAvailable = await checkOllamaAvailability();
+  
+  if (!isOllamaAvailable) {
+    console.log('Ollama not available, using rule-based recommendations');
     return generateRuleBasedRecommendations(userDetails);
   }
 
   try {
     const prompt = formatPromptForLLaMA(userDetails);
     
-    const output = await llamaGenerator(prompt, {
-      max_length: 500,
-      temperature: 0.8,
-      do_sample: true
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt: prompt,
+        stream: false,
+        options: {
+          temperature: 0.8,
+          top_p: 0.9,
+          max_tokens: 500
+        }
+      })
     });
 
-    const generatedText = output[0]?.generated_text || '';
-    const responseText = generatedText.replace(prompt, '').trim();
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const generatedText = data.response || '';
     
     // Try to parse JSON response
     try {
-      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+      const jsonMatch = generatedText.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
     } catch (parseError) {
-      console.log('Failed to parse LLaMA JSON response, using rule-based fallback');
+      console.log('Failed to parse Ollama JSON response, using rule-based fallback');
     }
     
     // Fallback: Use rule-based recommendations
     return generateRuleBasedRecommendations(userDetails);
     
   } catch (error) {
-    console.log('LLaMA generation failed:', error);
+    console.log('Ollama generation failed:', error);
     return generateRuleBasedRecommendations(userDetails);
   }
 };
@@ -329,19 +340,17 @@ const generateShoppingLinks = (productName: string) => {
   };
 };
 
-// Main AI recommendation engine using LLaMA
+// Main AI recommendation engine using Ollama
 export const generateGiftRecommendations = async (request: GiftRequest): Promise<GiftRecommendation[]> => {
-  await initializeLLaMA();
-
   try {
-    console.log('Generating AI-powered gift recommendations...');
+    console.log('Generating AI-powered gift recommendations with Ollama Llama 3.1...');
     
-    // Get LLaMA-generated recommendations (or rule-based fallback)
-    const llamaGifts = await generateLLaMARecommendations(request);
+    // Get Ollama-generated recommendations (or rule-based fallback)
+    const ollamaGifts = await generateOllamaRecommendations(request);
     
-    if (llamaGifts.length > 0) {
+    if (ollamaGifts.length > 0) {
       // Convert recommendations to our format
-      const recommendations: GiftRecommendation[] = llamaGifts.map((gift, index) => {
+      const recommendations: GiftRecommendation[] = ollamaGifts.map((gift, index) => {
         const { amazonLink, flipkartLink } = generateShoppingLinks(gift.name);
         const numericPrice = extractNumericPrice(gift.estimatedPrice || '₹2000');
         
