@@ -3,7 +3,7 @@ import { GiftFinderForm } from '@/components/GiftFinderForm';
 import { GiftCard } from '@/components/GiftCard';
 import { Button } from '@/components/ui/button';
 import { Heart, Sparkles, Gift, Users, Zap } from 'lucide-react';
-import { generateGiftRecommendations, submitFeedback, type GiftRequest, type GiftRecommendation } from '@/services/aiService';
+import { generateGiftRecommendations, type GiftRequest, type GiftRecommendation } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
 import heroImage from '@/assets/hero-image.jpg';
 
@@ -36,7 +36,8 @@ const Index = () => {
   };
 
   const handleFeedback = async (giftId: string, liked: boolean) => {
-    await submitFeedback(giftId, liked);
+    // Simple feedback logging for now
+    console.log(`Feedback for gift ${giftId}: ${liked ? 'liked' : 'disliked'}`);
     toast({
       title: liked ? "Thanks for the feedback!" : "Thanks for letting us know",
       description: liked ? "We're glad you love this suggestion!" : "We'll improve our recommendations",
